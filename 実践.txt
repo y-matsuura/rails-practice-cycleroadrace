@@ -1,0 +1,32 @@
+===================================
+TOP画面をつくる
+チーム・選手・レースの各画面に遷移する
+===================================
+
+$ vi config/routes.rb
+----------------------------------
++ get '/', to: 'top#index'
+----------------------------------
+
+$ vi app/controllers/TopController.rb
+
+
+===================================
+
+===================================
+PLAYER_TABLEの定義を誤っていたので削除する
+
+$ docker-compose run web bundle exec rails g migration DropPlayer
+$ docker-compose run web bundle exec rake db:migrate
+
+$ docker-compose run web bundle exec rails g \
+model player team_id:integer name:string age:integer sex:integer graduate:string results:text
+$ docker-compose run web bundle exec rake db:migrate
+
+
+
+
+
+
+
+

@@ -1,0 +1,576 @@
+==========================================
+サイクルロードレースを楽しく観戦する。
+
+チームを覚えるようにユニフォームや所属選手、フレーム、スポンサーなどを見れるようにする。
+選手の名前や過去の成績などを見れるようにする。
+レースの名前、開催地などを見れるようにする。
+
+
+チーム一覧・詳細
+　登録
+　更新
+　削除
+
+選手一覧・詳細
+
+レース一覧・詳細
+
+
+==========================================
+
+★開発環境の構築
+
+railsの新規プロジェクトを作成
+$ docker-compose run web rails new . --force --database=mysql
+
+$ docker-compose build
+
+$ vi config/database.yml
+----------------------------------
+username: root
+password: passowrd
+host: db
+database: app_road_development
+----------------------------------
+
+コンテナ起動
+$ docker-compose up -d
+
+起動確認
+$ docker-compose ps
+
+DB作成
+$ docker-compose run web bundle exec rake db:create
+
+
+★新規ページの作成
+
+新しいルートを作成
+$ vi config/routes.rb
+----------------------------------
+root 'teams#index'
+----------------------------------
+
+★チームcontrollerを作成
+$ vi app/controllers/teams_controller.rb
+
+★bootstraptを追加
+$ vi Gemfile
+----------------------------------
++ gem 'bootstrap', '~> 4.0.0'
+----------------------------------
+$ docker-compose build
+
+★bootstrapを使うための設定をおこなう。cssの拡張子を変更する
+$ cd app/assets/stylesheets/
+$ mv application.css application.scss
+
+★bootstrapの動作に影響するので削除
+$ vi application.scss
+----------------------------------
+- require_tree
+- require_self
+----------------------------------
+
+★bootstrapの定義を読み込むために追記
+----------------------------------
++ @import "bootstrap";
+----------------------------------
+
+★bootstrapの機能を使うためにライブラリを追加
+$ vi app/assets/javascripts/application.js
+- require jquery
++ require jquery3
++ require popper
++ require bootstrap-sprockets
+
+★チーム一覧画面の作成
+$ vi app/views/teams/index.html.erb
+
+★レイアウトの修正
+$ vi app/views/layouts/application.html.erb
+----------------------------------
+- <%= yield %>
++ <div class="container"><%= yield %></div>
+----------------------------------
+
+★各ページ共通のスタイルを定義するファイルを作成
+$ cd app/assets/stylesheets/
+$ vi base.scss
+※名前は任意
+
+★チーム一覧のスタイルを作成する
+$ vi teams.scss
+
+★共通スタイルを修正
+$ vi application.scss
+
+★SCSSをインポートする
+@import "base";
+@import "teams";
+
+★チームを保存するためのモデルを作成
+$ docker-compose run web bundle exec rails g model team name:string category:integer uniform_img:string
+
+★DBマイグレートを実行する
+$ docker-compose run web bundle exec rake db:migrate
+
+※補足
+直近のマイグレーションを取り消して実行前の状態に戻す
+$ docker-compose run web bundle exec rake db:rollback
+
+★ルーティングの設定
+$ vi config/routes.rb
+----------------------------------
+- root 'teams#index'
++ get 'teams', to: 'teams#index'
++ get 'teams/new', to: 'teams#new'
+----------------------------------
+
+★コントローラにnewメソッドを定義
+$ vi app/controllers/teams_controller.rb
+
+★ビューを作成
+$ vi app/views/teams/new.html.erb
+
+★チーム作成のリンクを張る
+$ vi app/views/teams/index.html.erb
+
+★チームコントローラを修正
+$ vi app/controllers/teams_controller.rb
+newメソッドに追加
+----------------------------------
++ @team = Team.ne
+----------------------------------
+
+★ビューを修正。ヘルパーを使う
+$ vi app/views/teams/new.html.erb
+
+★createメソッドを追加
+$ vi config/routes.rb
+----------------------------------
++ post 'teams', to: 'teams#create'
+----------------------------------
+
+$ vi app/controllers/teams_controller.rb
+----------------------------------
++
+def team_params
+  params.require(:team).permit(:name, :category)
+end
+----------------------------------
+
+★createメソッドにチームの保存処理を追加
+----------------------------------
++ Team.create(team_params)
+----------------------------------
+
+★チーム一覧
+$ vi app/controllers/teams_controller.rb
+
+チームのデータを取得する処理を追加
+----------------------------------
++ @team = Team.all
+----------------------------------
+
+
+$ vi app/views/teams/index.html.erb
+
+
+
+★タイムゾーンの設定
+$ vi config/application.rb
+class Application内に追加
+----------------------------------
++ config.time_zone = 'Tokyo'
+----------------------------------
+
+★railsコンテナ停止・起動
+$ docker-compose stop
+$ docker-compose up -d
+
+★日時のフォーマット
+$ vi app/views/teams/index.html.erb
+----------------------------------
+- team.updated_at
++ team.updated_at..strftime('%Y年%m月%d日') 
+----------------------------------
+
+★フォーマットファイルを作成する
+$ vi config/initializers/time_formats.rb
+----------------------------------
++ Time::DATE_FORMATS[:datetime_jp] = '%Y年%m月%d日'
+----------------------------------
+
+★railsコンテナ停止・起動
+$ docker-compose stop
+$ docker-compose up -d
+
+★作成したフォーマットを適用する
+vi app/views/teams/index.html.erb
+----------------------------------
+- team.updated_at.strftime('%Y年%m月%d日')
++ team.updated_at.to_s(:datetime_jp)
+----------------------------------
+
+★詳細画面のルートを追加
+$ vi config/routes.rb
+----------------------------------
++ get 'teams/:id', to: 'teams#show'
+----------------------------------
+
+★詳細アクションを追加
+$ vi app/controllers/teams_controller.rb
+----------------------------------
++
+def show
+  @team = Team.find(params[:id])
+end
+----------------------------------
+
+★詳細のviewを作成する
+$ vi app/views/teams/show.html.erb
+
+★リソースベースルーティング
+----------------------------------
+$ vi config/routes.rb
+- 他のルーティング
++ resources :teams
+----------------------------------
+
+★使用するルートだけに絞る
+----------------------------------
+$ vi config/routes.rb
+- resources :teams
++ resources :teams, only: [:indes, :new, :create, :show]
+----------------------------------
+
+★新規作成のパスをヘルパーに変更する
+$ vi app/views/teams/index.html.erb
+----------------------------------
+- <a href="/teams/new" class="btn btn-outline-dark">新規作成</a>
++ <%= link_to '新規作成', new_team_path, class: 'btn btn-outline-dark' %>
+----------------------------------
+
+★詳細のリンクを追加する
+----------------------------------
++ <th></th>
++ <td><%= link_to '詳細', team, class: 'btn btn-outline-dark' %></td>
+----------------------------------
+
+
+$ vi app/views/teams/new.html.erb
+----------------------------------
+- <a href="/teams" class="btn btn-outline-dark">チーム一覧</a>
++ <%= link_to 'チーム一覧', team_path, class: 'btn btn-outline-dark'  %>
+----------------------------------
+
+$ vi app/views/teams/show.html.erb
+----------------------------------
+- <a href="/teams" class="btn btn-outline-dark">一覧</a>
+- <a href="/teams" class="btn btn-outline-dark">編集</a>
++ <%= link_to '編集', team, class: 'btn btn-outline-dark' %>
+----------------------------------
+
+- 
++ <%= link_to '編集', team, class: 'btn btn-outline-dark' %>
+
+★editとupdateを追加
+$ vi config/routes.rb
+----------------------------------
++ :edit, :update
+----------------------------------
+
+$ vi app/controllers/teams_controller.rb
+
+$ cp app/views/teams/new.html.erb app/views/teams/edit.html.erb
+
+$ vi app/views/teams/edit.html.erb
+----------------------------------
+- 新規
++ 編集
+----------------------------------
+
+$ vi app/controllers/teams_controller.rb
+----------------------------------
++ team = Team.find(params[:id])
+  team.update(team_params)
++ redirect_to team
+----------------------------------
+
+★パーシャルで共通HTML作成
+$ cp new.html.erb _form.html.erb
+
+★コピーした_form.html.erbの不要な記述を削除する。formのみ残す。
+$ vi _form.html.erb
+
+★パーシャルを適用する
+$ vi new.html.erb
+----------------------------------
+- formの記述
++ <%= render partial: 'form' %>
+----------------------------------
+
+★パーシャルにインスタンス変数（@のやつ）を使うと不具合の原因となりやすい
+テンプレートからパーシャルにローカル変数を設定するように修正する
+$ vi new.html.erb
+----------------------------------
+- <%= render partial: 'form' %>
++ <%= render partial: 'form', locals: { team: @team } %>
+----------------------------------
+
+$ vi _form.html.erb
+----------------------------------
+- @team
++ team
+----------------------------------
+
+★残りもパーシャルに置き換える
+----------------------------------
+- formの記述
++ <%= render partial: 'form' %>
+----------------------------------
+
+★他もパーシャルに置き換える
+$ cp show.html.erb _team.html.erb
+----------------------------------
+$ vi _team.html.erb
+$ vi show.html.erb
+----------------------------------
+
+（参考）★モデルの場合
+$ vi index.html.erb
+
+フォーマットに変える
+$ vi time_formts.rb
+----------------------------------
++ Time::DATE_FORMATS[:datetime_jp] = '%Y年%m月%d日'
+----------------------------------
+
+$ vi app/views/teams/index.html.erb
+
+
+★削除機能の追加
+$ vi config/routes.rb
+----------------------------------
+- only
+----------------------------------
+
+$ vi app/views/teams/index.html.erb
+----------------------------------
++ <td><%= link_to '削除', team, class: 'btn btn-outline-dark', method: :delete %></td>
+----------------------------------
+
+$ vi app/controllers/teams_controller.rb
+----------------------------------
++ destroy
+----------------------------------
+
+★リファクタリング
+$ vi app/controllers/teams_controller.rb
+----------------------------------
++ def set_target_team
+    @team = Team.find(params[:id])
+  end
++ before_action :set_target_team, only: %i[show edit update destroy]
+- @team = Team.find(params[:id])
+----------------------------------
+
+★ページネーションのためのデータ作成
+$ vi db/seeds.rb
+----------------------------------
++ if Rails.env == 'development'
+  (1..50).each do |i|
+    Team.create(name: "チーム#{i}", category: "1")
+  end
+end
+----------------------------------
+
+★データ投入実行
+$ docker-compose exec web bundle exec rake db:seed
+
+★ページネーションのためのgemをインストール
+$ vi Gemfile
+----------------------------------
++ gem 'kaminari'
+----------------------------------
+
+$ docker-compose build
+$ docker-compose up -d
+
+★kaminariの設定ファイルを生成
+$ docker-compose exec web bundle exec rails g kaminari:config
+
+★kaminariのビューファイルを作成
+$ docker-compose exec web bundle exec rails g kaminari:views bootstrap4
+
+★ページネーションするように修正
+$ vi app/controllers/teams_controller.rb
+----------------------------------
+- @teams = Team.all
++ @teams = Team.page(params:[page])
+----------------------------------
+
+
+$ vi app/views/teams/index.html.erb
+----------------------------------
++ <%= paginate @team %>
+※最下部に追加
+----------------------------------
+
+$ vi config/application.rb
+----------------------------------
++ config.i18n.default_locale = :ja
+----------------------------------
+
+$ vi config/locales/ja.yml
+----------------------------------
++ ja:
+        views:
+                pagination:
+                  first: '最初'
+                  last: '最後'
+                  previous: '前'
+                  next: '次'
+                  truncate: '...'
+----------------------------------
+
+$ docker-compose stop
+$ docker-compose up -d
+
+
+★kaminariのページネーション用ファイルを修正する
+$ vi app/views/kaminari/_paginator.html.erb
+----------------------------------
+- <ul class="pagination">
++ <ul class="pagination justify-content-center">
+----------------------------------
+
+★表示件数を修正してみる
+$ vi config/initializers/kaminari_config.rb
+----------------------------------
+- config.default_per_page = 25
++ config.default_per_page = 10
+----------------------------------
+
+$ docker-compose stop
+$ docker-compose up -d
+
+
+★フラッシュメッセージ
+$ vi app/controllers/teams_controller.rb
+createメソッドに追加
+----------------------------------
++ flash[:notice] = "「#{team.name}」のチームを作成しました"
+----------------------------------
+
+$ vi app/views/teams/show.html.erb
+----------------------------------
++ <% if flash[:notice] %>
+  <div class="alert alert-primary"><%= flash[:notice] %></div>
+<% end %>
+<%= render @team %>
+----------------------------------
+
+★別の方法
+$ vi app/controllers/teams_controller.rb
+destroyに追加
+----------------------------------
+- redirect_to teams_path
++ redirect_to teams_path, flash: { notice: "「#{@team.name}」のチームが削除されました" }
+----------------------------------
+
+$ vi app/views/teams/index.html.erb
+----------------------------------
++ <% if flash[:notice] %>
+  <div class="alert alert-danger"><%= flash[:notice] %></div>
+<% end %>
+----------------------------------
+
+★バリデーション
+$ vi app/models/team.rb
+----------------------------------
++ validates :name, presence: true, length: { maximum: 100 }
+----------------------------------
+
+$ vi app/controllers/teams_controller.rb
+----------------------------------
+- team = Team.create(team_params)
++ team = Team.new(team_params)
+flash[:notice] = "「#{team.name}」のチームを作成しました"
+      redirect_to team
+----------------------------------
+
+$ vi app/views/teams/_form.html.erb
+----------------------------------
++ <% if flash[:error_messages] %>
+  <div class="alert alert-danger">
+    <ul>
+      <% flash[:error_messages].each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+----------------------------------
+
+$ vi Gemfile
+----------------------------------
++ gem 'rails-i18n'
+----------------------------------
+
+$ docker-compose build
+$ docker-compose stop
+$ docker-compose up -d
+
+$ vi config/locales/ja.yml
+----------------------------------
++ activerecord:
+                attributes:
+                        team:
+                                name: 名前
+                                category: カテゴリ
+----------------------------------
+
+★選手Playerモデルを作成する
+$ docker-compose run web bundle exec rails g \
+model player team:references name:string age:integer sex:integer graduate:string results:text
+
+$ vi db/migrate/20190208152218_create_players.rb
+----------------------------------
+- t.string :name
++ t.string :name, null: false
+----------------------------------
+
+$ docker-compose exec web bundle exec rake db:migrate
+
+$ vi app/models/team.rb
+----------------------------------
++ has_many :players
+----------------------------------
+
+$ vi app/model/team
+
+$ docker-compose exec web \
+> rails g controller player create destroy --skip-templage-engine
+
+$ vi app/controllers/players_controller.rb 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
