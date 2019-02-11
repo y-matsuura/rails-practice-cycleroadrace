@@ -1,32 +1,103 @@
-===================================
-TOP��ʂ�����
-�`�[���E�I��E���[�X�̊e��ʂɑJ�ڂ���
-===================================
+◆練習用のソースをgit clone
+$ git clone [リポジトリ]
 
-$ vi config/routes.rb
+◆docker-composeをインストール
+$ sudo apt install docker-compose
+
+◆pryインストール
+※rubyインストールが前提
+$ gem install pry
+
+◆pry debugインストール
+$ vi Gemfile
 ----------------------------------
-+ get '/', to: 'top#index'
++ gem 'pry-byebug'
+----------------------------------
+$ docker-compose build
+$ docker-compose stop
+$ docker-compose up -d
+
+◆pry debugを使う
+$ docker attach railspracticecycleroadrace_web_1
+※binding.pry
+
+◆railsの新規プロジェクトを作成する
+$ docker-compose run web rails new . --force --database=mysql
+$ docker-compose build
+
+$ vi config/database.yml
+----------------------------------
+username: root
+password: passowrd
+host: db
+database: app_road_development
 ----------------------------------
 
-$ vi app/controllers/TopController.rb
+コンテナ起動
+$ docker-compose up -d
 
+起動確認
+$ docker-compose ps
 
-===================================
+DB作成
+$ docker-compose run web bundle exec rake db:create
 
-===================================
-PLAYER_TABLE�̒�`������Ă����̂ō폜����
+チームtableつくる
+$ docker-compose run web bundle exec rails g model team name:string category:integer uniform:integer
+$ docker-compose run web bundle exec rake db:migrate
+----------------------------------
+name：string：チーム名
+category:integer：カテゴリーtableのID
+uniform:integer：ユニフォームtableのID
+----------------------------------
 
-$ docker-compose run web bundle exec rails g migration DropPlayer
+チームtableのcategoryを変更する
+$ docker-compose run web bundle exec rails g migration rename_category_column_to_teams
+
+チームtableにカテゴリーIDを追加する
+$ docker-compose run web bundle exec rails g migration AddTeamsToTeam category_id:integer
+$ docker-compose run web bundle exec rake db:migrate
+----------------------------------
+category_id:integer:カテゴリーtableのID
+----------------------------------
+
+カテゴリーtableからカテゴリーIDを削除する
+$ docker-compose run web bundle exec rails g migration RemoveColumnFromCategory category_id:integer
 $ docker-compose run web bundle exec rake db:migrate
 
-$ docker-compose run web bundle exec rails g \
-model player team_id:integer name:string age:integer sex:integer graduate:string results:text
+
+選手tableつくる
+$ docker-compose run web bundle exec rails g model player name:string category:integer uniform_img:string
+----------------------------------
+name：string：選手名
+birthplace：string：選手の出身地
+age：integer：選手の年齢
+record:text:選手の成績
+team_id:integer：チームtableのID
+----------------------------------
+
+レースtableつくる
+$ docker-compose run web bundle exec rails g model race name:string category:integer uniform_img:string
+----------------------------------
+name：string：レース名
+host_country:integer：開催国tableのID
+venue:text:開催地
+participated_team_id：integer：参加チームID
+participated_player_id：integer：参加選手ID
+----------------------------------
+
+カテゴリーtableつくる
+$ docker-compose run web bundle exec rails g model category name:string
 $ docker-compose run web bundle exec rake db:migrate
+----------------------------------
+name:string:カテゴリー名
+----------------------------------
 
+レース_選手tableつくる
+$
+----------------------------------
+アソシエーションでつくるのかな？
+[参考]
+https://qiita.com/morikuma709/items/1e389ddcdfc1102ef3f4
 
-
-
-
-
-
-
+----------------------------------
