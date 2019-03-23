@@ -1,0 +1,15 @@
+<div class="d-flex align-items-center">
+  <h1>レース編集</h1>
+  <div class="ml-auto races__linkBox">
+    <%= link_to '一覧', races_path, class: 'btn btn-outline-dark' %>
+  </div>
+</div>
+
+<%= form_for @race do |f| %>
+  <div class="form-group">
+    <%= f.label :name, '名前' %>
+    <%= f.text_field :name, class: 'form-control' %>
+  </div>
+
+  <%= f.submit '保存', class: 'btn btn-primary' %>
+<% end %>
