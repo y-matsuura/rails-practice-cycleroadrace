@@ -4,6 +4,6 @@ class StartListsController < ApplicationController
   end
 
   def show
-    @start_list = StartList.find(params[:id]).merge(Team.id)
+    @start_list = StartList.find(params[:id])
   end
 end
