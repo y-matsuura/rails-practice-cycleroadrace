@@ -29,14 +29,10 @@ gem 'jbuilder', '~> 2.5'
 
 # Use Capistrano for deployment
 # gem 'capistrano-rails', group: :development
-<<<<<<< HEAD
-gem 'bootstrap', '~> 4.0.0'
-=======
 
 gem 'bootstrap', '~> 4.3.1'
 gem 'kaminari'
 gem 'rails-i18n'
->>>>>>> 3b7c19dc0d4e9b4ac99f2dc869dbbe99f0df81b7
 gem 'mini_racer'
 
 group :development, :test do
