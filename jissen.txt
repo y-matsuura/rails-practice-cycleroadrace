@@ -28,9 +28,9 @@ $ docker-compose build
 $ vi config/database.yml
 ----------------------------------
 username: root
-password: passowrd
+password: password
 host: db
-database: app_road_development
+database: app_cycle_development
 ----------------------------------
 
 コンテナ起動
@@ -42,13 +42,17 @@ $ docker-compose ps
 DB作成
 $ docker-compose run web bundle exec rake db:create
 
+DBのIPを調べる
+$ docker inspect -f '{{.NetworkSettings.Networks.railspracticecycleroadrace_default.IPAddress}}' railspracticecycleroadrace_db_1
+
 チームtableつくる
-$ docker-compose run web bundle exec rails g model team name:string category:integer uniform:integer
+$ docker-compose run web bundle exec rails g model team name:string category:integer uniform:integer logo:integer
 $ docker-compose run web bundle exec rake db:migrate
 ----------------------------------
 name：string：チーム名
-category:integer：カテゴリーtableのID
+category_id:integer：カテゴリーtableのID
 uniform:integer：ユニフォームtableのID
+logo:integer:ロゴtableのID
 ----------------------------------
 
 チームtableのcategoryを変更する
@@ -100,4 +104,310 @@ $
 [参考]
 https://qiita.com/morikuma709/items/1e389ddcdfc1102ef3f4
 
+----------------------------------
+
+▼bootstrapの準備
+=============================================================================================
+// gem追加
+$ atom Gemfile
+----------------------------------
++ gem 'bootstrap', '~> 4.0.0'
++ gem 'mini_racer'
+----------------------------------
+$ docker-compose build
+$ docker-compose stop
+$ docker-compose up -d
+
+// CSSファイルを変更
+$ mv app/assets/stylesheets/application.css app/assets/stylesheets/application.scss
+$ atom app/assets/stylesheets/application.scss
+----------------------------------
+- = require_tree
+- = require_self
++ @import "bootstrap";
+----------------------------------
+
+// JSファイルを変更
+$ atom app/assets/javascripts/application.js
+----------------------------------
+- = require jquery
++ = require jquery3
++ //= require popper
++ //= require bootstrap-sprockets
+----------------------------------
+
+▼共通のデザイン
+=============================================================================================
+//　レイアウトを修正する
+$ atom app/views/layouts/application.html.erb
+----------------------------------
+- <%= yield %>
++ <div class="container"><%= yield %></div>
+----------------------------------
+
+// 共通のスタイルをつくる
+$ atom app/assets/stylesheets/base.scss
+※↑この名前は任意でOK
+----------------------------------
++
+h1 {
+  margin: 30px 0;
+}
+----------------------------------
+
+// 共通のスタイルを読み込む
+$ atom application.scss
+----------------------------------
++ @import "base";
+----------------------------------
+
+▼チーム一覧をつくる
+=============================================================================================
+// チームtableつくる
+$ docker-compose run web bundle exec rails g model team name:string category:integer uniform:integer logo:integer
+----------------------------------
+name：string：チーム名
+category:integer：カテゴリーtableのID
+uniform:integer：ユニフォームtableのID
+logo:integer:ロゴtableのID
+----------------------------------
+$ docker-compose run web bundle exec rake db:migrate
+
+// 一覧画面表示のアクションをつくる
+$ atom app/controller/teams_controller.rb
+----------------------------------
++
+def index
+  @team = Team.all
+end
+----------------------------------
+
+▼チーム登録をつくる
+=============================================================================================
+// 登録画面表示のアクションをつくる
+$ atom app/controller/teams_controller.rb
+----------------------------------
++
+def new
+  @team = Team.new
+end
+----------------------------------
+
+// 登録画面のビューつくる
+$ atom app/views/teams/new.html.erb
+
+// 詳細画面表示のアクションをつくる
+$ atom app/controller/teams_controller.rb
+----------------------------------
++
+def show
+end
+----------------------------------
+
+// 詳細画面のビューをつくる
+$ atom app/views/teams/show.html.erb
+$ atom app/views/teams/_team.html.erb
+
+// 詳細画面に表示する情報は共通化しておく
+$ atom app/controller/teams_controller.rb
+----------------------------------
++
+before_action :set_target_team, only: %i[show edit update destroy]
+
+private
+
+def set_target_team
+  @team = Team.find(params[:id])
+end
+----------------------------------
+
+▼カテゴリー一覧をつくる
+=============================================================================================
+// カテゴリーtableをつくる
+$ docker-compose run web bundle exec rails g model category name:string
+----------------------------------
+name：string：チーム名
+----------------------------------
+$ docker-compose run web bundle exec rake db:migrate
+
+// チームとカテゴリを関連つける
+$ app/models/team.rb
+----------------------------------
++ belongs_to :category
+----------------------------------
+
+▼ロゴ一覧をつくる
+=============================================================================================
+// ロゴtableをつくる
+$ docker-compose run web bundle exec rails g model logo image_name:string
+----------------------------------
+image_name：ロゴ画像のファイル名
+----------------------------------
+
+// チームtableにロゴIDを追加
+$ docker-compose run web bundle exec rails g migration AddLogIdToTeams logo_id:Integer
+
+$ docker-compose run web bundle exec rake db:migrate
+
+// チームとロゴを関連つける
+$ app/models/team.rb
+----------------------------------
++ belongs_to :logo
+----------------------------------
+
+// サンプルロゴ画像を配置する
+$ mkdir app/assets/images/logo
+上記に配置
+
+
+▼ユニフォーム一覧をつくる
+=============================================================================================
+
+
+▼レース一覧をつくる
+=============================================================================================
+// レースtableつくる
+$ docker-compose run web bundle exec rails g model race name:string
+----------------------------------
+name：string：レース名
+----------------------------------
+$ docker-compose run web bundle exec rake db:migrate
+
+// 一覧画面表示のアクションをつくる
+$ atom app/controller/races_controller.rb
+----------------------------------
++
+def index
+  @races = Race.all
+end
+----------------------------------
+
+▼レース登録をつくる
+=============================================================================================
+// 登録画面表示のアクションをつくる
+$ atom app/controller/races_controller.rb
+----------------------------------
++
+def new
+  @race = Race.new
+end
+----------------------------------
+
+// 登録画面のビューつくる
+$ atom app/views/races/new.html.erb
+
+// 詳細画面表示のアクションをつくる
+$ atom app/controller/races_controller.rb
+----------------------------------
++
+def show
+end
+----------------------------------
+
+// 詳細画面のビューをつくる
+$ atom app/views/races/show.html.erb
+$ atom app/views/races/_race.html.erb
+
+// 詳細画面に表示する情報は共通化しておく
+$ atom app/controller/races_controller.rb
+----------------------------------
++
+before_action :set_target_race, only: %i[show edit update destroy]
+
+private
+
+def set_target_race
+  @race = Race.find(params[:id])
+end
+----------------------------------
+
+▼プレイヤー一覧をつくる
+=============================================================================================
+// プレイヤーtableつくる
+$ docker-compose run web bundle exec rails g model player name:string team_id:integer
+----------------------------------
+name：string：プレイヤー名 team_id:integer：チームID
+----------------------------------
+$ docker-compose run web bundle exec rake db:migrate
+
+// 一覧画面表示のアクションをつくる
+$ atom app/controller/players_controller.rb
+----------------------------------
++
+def index
+  @players = Player.all
+end
+----------------------------------
+
+▼プレイヤー登録をつくる
+=============================================================================================
+// 登録画面表示のアクションをつくる
+$ atom app/controller/players_controller.rb
+----------------------------------
++
+def new
+  @player = Player.new
+end
+----------------------------------
+
+// 登録画面のビューつくる
+$ atom app/views/players/new.html.erb
+
+// 詳細画面表示のアクションをつくる
+$ atom app/controller/players_controller.rb
+----------------------------------
++
+def show
+end
+----------------------------------
+
+// 詳細画面のビューをつくる
+$ atom app/views/players/show.html.erb
+$ atom app/views/players/_race.html.erb
+
+// 詳細画面に表示する情報は共通化しておく
+$ atom app/controller/players_controller.rb
+----------------------------------
++
+before_action :set_target_player, only: %i[show edit update destroy]
+
+private
+
+def set_target_player
+  @player = Player.find(params[:id])
+end
+----------------------------------
+
+
+▼スタートリストをつくる
+=============================================================================================
+$ atom app/controllers/start_lists_controller.rb
+$ mkdir app/views/start_lists
+$ atom app/views/start_lists/index.html.erb
+$ atom config/routes.rb
+----------------------------------
++
+resources :start_lists
+----------------------------------
+
+// スタートリストtableをつくる
+$ docker-compose run web bundle exec rails g model start_list race_id:integer player_id:integer
+----------------------------------
+race_id：integer：レースID
+player_id:integer：プレイヤーID
+----------------------------------
+$ docker-compose run web bundle exec rake db:migrate
+
+// レースtableにスタートリストIDを追加する
+$ docker-compose run web bundle exec rails g migration AddStartListsToRace start_list_id:integer
+$ docker-compose run web bundle exec rake db:migrate
+----------------------------------
+start_list_id:integer:スタートリストtableのID
+----------------------------------
+
+// プレイヤーtableにスタートリストIDを追加する
+$ docker-compose run web bundle exec rails g migration AddStartListsToPlayer start_list_id:integer
+$ docker-compose run web bundle exec rake db:migrate
+----------------------------------
+start_list_id:integer:スタートリストtableのID
 ----------------------------------
