@@ -7,6 +7,7 @@ class TeamsController < ApplicationController
 
   def new
     @team = Team.new
+    # @categories = Category.all
   end
 
   def create

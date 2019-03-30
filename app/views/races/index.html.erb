@@ -24,7 +24,11 @@
     <% @races.each do |race| %>
       <tr>
         <td><%= race.name %></td>
-        <td><%= link_to 'スタートリスト', start_list_path(race.start_list_id), class: 'btn btn-outline-dark' %></td>
+        <td>
+          <% if race.start_list_id != nil %>
+          <%= link_to 'スタートリスト', start_list_path(race.start_list_id), class: 'btn btn-outline-dark' %>
+          <% end %>
+        </td>
         <td><%= race.created_at.to_s(:datetime_jp) %></td>
         <td><%= race.updated_at.to_s(:datetime_jp) %></td>
         <td><%= link_to '詳細', race, class: 'btn btn-outline-dark' %></td>

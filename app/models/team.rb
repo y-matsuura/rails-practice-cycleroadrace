@@ -1,5 +1,5 @@
 class Team < ApplicationRecord
-  belongs_to :category
-  belongs_to :logo
+  belongs_to :category, optional: true
+  belongs_to :logo, optional: true
   has_many :players
 end

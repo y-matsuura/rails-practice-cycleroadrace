@@ -2,20 +2,63 @@
   <div class="card-header">
     <h4><%= @start_list.race.name %></h4>
   </div>
-  <div class="card-body">
-    <p class="text-right font-weight-bold mr-10">
-      <% team_id = nil %>
-      <% @start_list.players.each do |player| %>
-        <%
-          if team_id != player.team.id
-            team_id = player.team.id
-        %>
-          <%= player.team.name %>
-        <% end %>
-        <ul>
-          <li><%= player.name %></li>
-        </ul>
+
+  <% count = 0 %>
+  <% team_id = nil %>
+
+  <% @start_list.players.each do |player| %>
+    <% if count % 2 == 0 %>
+    <div class="row">
+    <% end %>
+      <% if team_id != player.team.id %>
+      <div class="col-sm-2">
+        <div class="panel panel-default">
+        <div class="panel-heading strong"><%= player.team.name %></div>
       <% end %>
-    </p>
-  </div>
+      <div class="panel-body text-right"><%= player.name %></div>
+      <% if team_id != player.team.id %>
+      <% team_id = player.team.id %>
+        </div>
+      </div>
+      <% end %>
+    <% if count % 2 == 0 %>
+    <% count += 1 %>
+    </div>
+    <% end %>
+  <% end %>
 </div>
+
+
+
+  <!--<div class="row">
+    <div class="col-sm-2">
+      <div class="panel panel-default">
+        <div class="panel-heading strong">Sky</div>
+        <div class="panel-body text-right">コンテンツ</div>
+        <div class="panel-body text-right">コンテンツ</div>
+      </div>
+    </div>
+    <div class="col-sm-2">
+      <div class="panel panel-default">
+        <div class="panel-heading strong">Movistor</div>
+        <div class="panel-body text-right">コンテンツ</div>
+        <div class="panel-body text-right">コンテンツ</div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-sm-2">
+      <div class="panel panel-default">
+        <div class="panel-heading strong">BORA</div>
+        <div class="panel-body text-right">コンテンツ</div>
+        <div class="panel-body text-right">コンテンツ</div>
+      </div>
+    </div>
+    <div class="col-sm-2">
+      <div class="panel panel-default">
+        <div class="panel-heading strong">MERIDA</div>
+        <div class="panel-body text-right">コンテンツ</div>
+        <div class="panel-body text-right">コンテンツ</div>
+      </div>
+    </div>
+  </div>-->
