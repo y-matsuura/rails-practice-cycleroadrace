@@ -1,0 +1,18 @@
+version: 2
+jobs:
+  build:
+    machine: true
+    steps:
+      - checkout
+      - run:
+          name: Build Docker Image
+          command: docker-compose build
+      - run:
+          name: Run tests
+          command: |
+            docker-compose run cycle-road-race-start-list /bin/bash -c '\
+              cp .env.example .env && \
+              composer install --no-interaction && \
+              php artisan key:generate && \
+              ./artisan migrate:refresh && \
+              ./vendor/bin/phpunit -c phpunit.circle.xml'
