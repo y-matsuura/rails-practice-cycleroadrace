@@ -4,7 +4,6 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: apt-get update -qq && apt-get install -y build-essential nodejs
       - run:
           name: Build Docker Image
           command: docker-compose build
