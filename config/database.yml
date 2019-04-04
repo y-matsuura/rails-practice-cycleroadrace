@@ -52,3 +52,4 @@ production:
   database: app_cycle_production
   username: app
   password: <%= ENV['APP_DATABASE_PASSWORD'] %>
+  url: <%= ENV['DATABASE_URL'] %>
